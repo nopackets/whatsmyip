@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What's My IP</title>
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2t1Jr+ZekL1Tq3kXHnq4dFZW8S+05t0R1V1qW6s=" crossorigin=""/>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #f0f2f5;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 30px;
+    }
+    .card {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        max-width: 500px;
+        width: 100%;
+        text-align: center;
+    }
+    h1 {
+        margin-bottom: 20px;
+        color: #333;
+    }
+    .info {
+        margin: 10px 0;
+        font-size: 1.2em;
+        color: #555;
+    }
+    #map {
+        height: 300px;
+        margin-top: 20px;
+        border-radius: 10px;
+    }
+    button {
+        margin-top: 15px;
+        padding: 10px 20px;
+        border: none;
+        background-color: #4CAF50;
+        color: white;
+        font-size: 1em;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #45a049;
+    }
+</style>
+</head>
+<body>
+
+<div class="card">
+    <h1>What's My IP?</h1>
+    <div class="info" id="ip">IP: Loading...</div>
+    <div class="info" id="city">City: Loading...</div>
+    <div class="info" id="region">Region: Loading...</div>
+    <div class="info" id="country">Country: Loading...</div>
+    <div id="map"></div>
+    <button onclick="fetchIP()">Refresh</button>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o8M4W7wT1mwn2FtUlwFg3fY+nS3tC9myIVqkXwPZSAc=" crossorigin=""></script>
+<script>
+    let map, marker;
+
+    async function fetchIP() {
+        document.getElementById('ip').textContent = 'IP: Loading...';
+        document.getElementById('city').textContent = 'City: Loading...';
+        document.getElementById('region').textContent = 'Region: Loading...';
+        document.getElementById('country').textContent = 'Country: Loading...';
+
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+
+            const { ip, city, region, country_name, latitude, longitude } = data;
+
+            document.getElementById('ip').textContent = `IP: ${ip}`;
+            document.getElementById('city').textContent = `City: ${city}`;
+            document.getElementById('region').textContent = `Region: ${region}`;
+            document.getElementById('country').textContent = `Country: ${country_name}`;
+
+            if (!map) {
+                map = L.map('map').setView([latitude, longitude], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }).addTo(map);
+                marker = L.marker([latitude, longitude]).addTo(map);
+            } else {
+                map.setView([latitude, longitude], 13);
+                marker.setLatLng([latitude, longitude]);
+            }
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById('ip').textContent = 'Could not fetch IP.';
+        }
+    }
+
+    // Fetch IP on page load
+    fetchIP();
+</script>
+
+</body>
+</html>
