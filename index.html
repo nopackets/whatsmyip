@@ -3,111 +3,283 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>What's My IP</title>
-<!-- Leaflet CSS -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2t1Jr+ZekL1Tq3kXHnq4dFZW8S+05t0R1V1qW6s=" crossorigin=""/>
+<title>Guess Your City</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
 <style>
-    body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: #f0f2f5;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 30px;
-    }
-    .card {
-        background: white;
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        max-width: 500px;
-        width: 100%;
-        text-align: center;
-    }
-    h1 {
-        margin-bottom: 20px;
-        color: #333;
-    }
-    .info {
-        margin: 10px 0;
-        font-size: 1.2em;
-        color: #555;
-    }
-    #map {
-        height: 300px;
-        margin-top: 20px;
-        border-radius: 10px;
-    }
-    button {
-        margin-top: 15px;
-        padding: 10px 20px;
-        border: none;
-        background-color: #4CAF50;
-        color: white;
-        font-size: 1em;
-        border-radius: 8px;
-        cursor: pointer;
-    }
-    button:hover {
-        background-color: #45a049;
-    }
+  :root {
+    --bg-blur: 12px;
+    --radius: 14px;
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+    --accent1: #6d28d9;
+    --accent2: #3b82f6;
+    --good: #22c55e;
+    --ok: #eab308;
+    --bad: #ef4444;
+    --text-dark: #0f172a;
+    --text-muted: #64748b;
+    font-family: Inter, system-ui, sans-serif;
+  }
+
+  body {
+    margin: 0;
+    background: #f7f8fc;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    filter: saturate(0.9) brightness(0.95);
+    z-index: -2;
+  }
+
+  .wrap {
+    width: min(900px, 94%);
+    margin: 40px auto;
+    background: rgba(255,255,255,0.65);
+    backdrop-filter: blur(var(--bg-blur));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 22px;
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 20px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-dark);
+  }
+
+  .meta {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .map-box {
+    width: 100%;
+    height: 440px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+
+  #map {
+    width: 100%;
+    height: 100%;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  button {
+    border: none;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.15s ease;
+  }
+
+  .btn-main {
+    background: linear-gradient(90deg, var(--accent1), var(--accent2));
+    color: #fff;
+  }
+
+  .btn-ghost {
+    background: rgba(255,255,255,0.55);
+    border: 1px solid rgba(0,0,0,0.1);
+    color: var(--text-dark);
+  }
+
+  .panel {
+    background: rgba(255,255,255,0.75);
+    padding: 14px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+
+  .result-head {
+    font-size: 15px;
+    color: var(--text-muted);
+  }
+
+  .result-main {
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 6px;
+    color: var(--text-dark);
+  }
+
+  .badge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .b-good { background: rgba(34,197,94,0.15); color: var(--good); }
+  .b-ok { background: rgba(234,179,8,0.15); color: var(--ok); }
+  .b-bad { background: rgba(239,68,68,0.15); color: var(--bad); }
+
+  ul {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-dark);
+  }
 </style>
 </head>
 <body>
 
-<div class="card">
-    <h1>What's My IP?</h1>
-    <div class="info" id="ip">IP: Loading...</div>
-    <div class="info" id="city">City: Loading...</div>
-    <div class="info" id="region">Region: Loading...</div>
-    <div class="info" id="country">Country: Loading...</div>
-    <div id="map"></div>
-    <button onclick="fetchIP()">Refresh</button>
+<div class="wrap">
+
+  <div>
+    <h1>Guess Your City</h1>
+    <div class="meta">Place a 5 km radius guess on the map</div>
+
+    <div class="map-box">
+      <div id="map"></div>
+    </div>
+
+    <div class="meta" id="ip">IP: —</div>
+    <div class="meta" id="country">Country: —</div>
+
+    <div class="controls">
+      <button class="btn-main" id="reset">Reset</button>
+      <button class="btn-ghost" id="zoom">Zoom to Country</button>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <div class="result-head">Result</div>
+      <div id="result" class="result-main">Click on the map to guess.</div>
+      <div id="detail" class="meta" style="margin-top:6px"></div>
+      <div id="badge"></div>
+      <div class="meta" style="margin-top:10px">Distance: <b id="km">—</b></div>
+    </div>
+
+    <div class="panel">
+      <div class="result-head">How it works</div>
+      <ul>
+        <li>Click anywhere on the map to make a guess.</li>
+        <li>If you're within 10 km, your exact city is revealed.</li>
+        <li>Otherwise you only get distance + feedback.</li>
+      </ul>
+    </div>
+  </div>
 </div>
 
-<!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o8M4W7wT1mwn2FtUlwFg3fY+nS3tC9myIVqkXwPZSAc=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    let map, marker;
+  function dist(a, b, c, d) {
+    const R = 6371;
+    const dLat = (c - a) * Math.PI / 180;
+    const dLon = (d - b) * Math.PI / 180;
+    const x = Math.sin(dLat/2)**2 +
+      Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180) *
+      Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+  }
 
-    async function fetchIP() {
-        document.getElementById('ip').textContent = 'IP: Loading...';
-        document.getElementById('city').textContent = 'City: Loading...';
-        document.getElementById('region').textContent = 'Region: Loading...';
-        document.getElementById('country').textContent = 'Country: Loading...';
+  let map, realLat, realLon, realCity;
+  let guessCircle = null;
+  let realMarker = null;
+  let toggle = true;
 
-        try {
-            const res = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
+  async function loadData() {
+    const r = await fetch("https://geolocation-db.com/json/");
+    const d = await r.json();
 
-            const { ip, city, region, country_name, latitude, longitude } = data;
+    realLat = d.latitude;
+    realLon = d.longitude;
+    realCity = d.city;
 
-            document.getElementById('ip').textContent = `IP: ${ip}`;
-            document.getElementById('city').textContent = `City: ${city}`;
-            document.getElementById('region').textContent = `Region: ${region}`;
-            document.getElementById('country').textContent = `Country: ${country_name}`;
+    document.getElementById("ip").textContent = "IP: " + d.IPv4;
+    document.getElementById("country").textContent = "Country: " + d.country_name;
 
-            if (!map) {
-                map = L.map('map').setView([latitude, longitude], 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19,
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                }).addTo(map);
-                marker = L.marker([latitude, longitude]).addTo(map);
-            } else {
-                map.setView([latitude, longitude], 13);
-                marker.setLatLng([latitude, longitude]);
-            }
+    const bg = `https://source.unsplash.com/1600x900/?${encodeURIComponent(d.country_name + " landscape")}`;
+    document.body.style.setProperty("--bg-img", bg);
 
-        } catch (err) {
-            console.error(err);
-            document.getElementById('ip').textContent = 'Could not fetch IP.';
-        }
+    document.querySelector("body::before");
+    const s = document.createElement("style");
+    s.innerHTML = `body::before { background-image: url("${bg}"); }`;
+    document.head.appendChild(s);
+
+    map = L.map("map").setView([realLat, realLon], 6);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+    map.on("click", clicked);
+  }
+
+  function clicked(e) {
+    const a = e.latlng.lat;
+    const b = e.latlng.lng;
+
+    if (guessCircle) map.removeLayer(guessCircle);
+    guessCircle = L.circle([a,b], {
+      radius: 5000,
+      color: "#3b82f6",
+      weight: 2,
+      fillColor: "#3b82f6",
+      fillOpacity: 0.12
+    }).addTo(map);
+
+    const k = Math.round(dist(realLat, realLon, a, b));
+    document.getElementById("km").textContent = k + " km";
+
+    const r = document.getElementById("result");
+    const d = document.getElementById("detail");
+    const bEl = document.getElementById("badge");
+
+    if (k <= 10) {
+      if (realMarker) map.removeLayer(realMarker);
+      realMarker = L.marker([realLat, realLon]).addTo(map);
+      r.textContent = `You got it! ${realCity}`;
+      d.textContent = "Close enough to reveal the city.";
+      bEl.innerHTML = `<span class="badge b-good">Excellent</span>`;
+      guessCircle.setStyle({ color: "#22c55e", fillColor: "#22c55e", fillOpacity:0.18 });
+    } else if (k < 20) {
+      r.textContent = k + " km away.";
+      d.textContent = "Pretty close!";
+      bEl.innerHTML = `<span class="badge b-ok">Close</span>`;
+      guessCircle.setStyle({ color: "#eab308", fillColor: "#eab308", fillOpacity:0.12 });
+    } else {
+      r.textContent = k + " km away.";
+      d.textContent = "Not close enough to reveal.";
+      bEl.innerHTML = `<span class="badge b-bad">Far</span>`;
+      guessCircle.setStyle({ color: "#ef4444", fillColor: "#ef4444", fillOpacity:0.10 });
     }
+  }
 
-    // Fetch IP on page load
-    fetchIP();
+  document.getElementById("reset").onclick = () => {
+    if (guessCircle) map.removeLayer(guessCircle);
+    if (realMarker) map.removeLayer(realMarker);
+    guessCircle = null;
+    realMarker = null;
+    document.getElementById("result").textContent = "Click on the map to guess.";
+    document.getElementById("detail").textContent = "";
+    document.getElementById("badge").innerHTML = "";
+    document.getElementById("km").textContent = "—";
+  };
+
+  document.getElementById("zoom").onclick = () => {
+    map.setView([realLat, realLon], toggle ? 9 : 6);
+    toggle = !toggle;
+  };
+
+  loadData();
 </script>
-
 </body>
 </html>
+
